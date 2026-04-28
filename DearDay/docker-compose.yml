@@ -1,0 +1,62 @@
+name: dearday
+
+services:
+  dearday_web:
+    build: ./dearday_app
+    image: dearday_web:latest
+    container_name: dearday_web
+    networks:
+      - mynetwork
+    depends_on:
+      - dearday_db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_HOST: dearday_db
+      POSTGRES_PORT: 5432
+      DJANGO_DEBUG: 1
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    volumes:
+      - static_volume:/usr/src/app/staticfiles
+    restart: always
+    ports:
+      - "18000:8000"
+
+  dearday_nginx:
+    build: ./dearday_nginx
+    image: dearday_nginx:latest
+    container_name: dearday_nginx
+    networks:
+      - mynetwork
+    depends_on:
+      - dearday_web
+    volumes:
+      - static_volume:/usr/src/app/staticfiles
+    restart: always
+    ports:
+      - "18080:80"
+
+  dearday_db:
+    image: postgres:15.4
+    container_name: dearday_db
+    networks:
+      - mynetwork
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    volumes:
+      - diary_volume:/var/lib/postgresql/data
+    restart: always
+
+networks:
+  mynetwork:
+    name: dearday_network
+
+volumes:
+  diary_volume:
+    name: dearday_diary_volume
+  static_volume:
+    name: dearday_static_volume

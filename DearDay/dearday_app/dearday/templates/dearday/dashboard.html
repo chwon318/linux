@@ -1,0 +1,250 @@
+{% extends 'dearday/base.html' %}
+
+{% block title %}오늘 하루{% endblock %}
+
+{% block content %}
+<section class="hero diary-hero">
+    <div>
+        <p class="eyebrow">오늘 하루</p>
+        <h1>친구에게 말하듯 하루를 남기고, 일기로 정리합니다.</h1>
+        <p class="hero-copy">AI와 카톡하듯 대화하면 오늘의 장면과 감정을 모아 일기를 완성합니다.</p>
+    </div>
+    <div class="hero-actions">
+        <a class="button" href="{% url 'conversation_new' %}">오늘의 대화 시작</a>
+    </div>
+</section>
+
+<section class="stats-grid compact-stats" aria-label="AI 일기 통계">
+    <a class="stat-card stat-link{% if selected_status == 'writing' %} active{% endif %}" href="?status=writing#diaryStatusList" data-stat="writing">
+        <span>작성중인 일기</span>
+        <strong>{{ writing_count }}</strong>
+        <small>아직 완성하지 않은 하루</small>
+    </a>
+    <a class="stat-card stat-link{% if selected_status == 'finished' %} active{% endif %}" href="?status=finished#diaryStatusList" data-stat="finished">
+        <span>작성된 일기</span>
+        <strong>{{ finished_count }}</strong>
+        <small>AI가 완성한 일기</small>
+    </a>
+</section>
+
+<section class="panel status-list-panel" id="diaryStatusList" {% if not selected_status %}hidden{% endif %}>
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Diary List</p>
+            <h2 data-status-title>{% if selected_status_label %}{{ selected_status_label }} 목록{% else %}작성중인 일기 목록{% endif %}</h2>
+        </div>
+    </div>
+
+    <div data-status-panel="writing" {% if selected_status != 'writing' %}hidden{% endif %}>
+    {% if writing_items %}
+        <div class="session-list">
+            {% for conversation in writing_items %}
+                <article class="session-item" data-conversation-id="{{ conversation.pk }}" data-diary-status="{% if conversation.is_finished %}finished{% else %}writing{% endif %}" data-diary-date="{{ conversation.diary_date|date:'Y-m-d' }}">
+                    <div>
+                        <span class="pill">{{ conversation.diary_date|date:'Y-m-d' }}</span>
+                        <h3><a href="{% url 'conversation_detail' conversation.pk %}">{{ conversation.display_title }}</a></h3>
+                        <p>
+                            {% if conversation.mood %}오늘의 기분: {{ conversation.mood }} · {% endif %}
+                            {{ conversation.message_count }}개 메시지
+                        </p>
+                    </div>
+                    <div class="session-meta">
+                        <strong>대화중</strong>
+                        <span>{{ conversation.updated_at|date:'m-d H:i' }}</span>
+                        <div class="row-actions">
+                            <a href="{% url 'conversation_detail' conversation.pk %}">열기</a>
+                            <form class="delete-form" method="post" action="{% url 'conversation_delete' conversation.pk %}" data-title="{{ conversation.display_title }}">
+                                {% csrf_token %}
+                                <button class="danger-link" type="submit">삭제</button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>작성중인 일기가 없습니다.</h3>
+            <p>오늘 하루와 대화를 시작하면 이곳에서 상태별로 확인할 수 있습니다.</p>
+        </div>
+    {% endif %}
+    </div>
+
+    <div data-status-panel="finished" {% if selected_status != 'finished' %}hidden{% endif %}>
+    {% if finished_items %}
+        <div class="session-list">
+            {% for conversation in finished_items %}
+                <article class="session-item" data-conversation-id="{{ conversation.pk }}" data-diary-status="finished" data-diary-date="{{ conversation.diary_date|date:'Y-m-d' }}">
+                    <div>
+                        <span class="pill">{{ conversation.diary_date|date:'Y-m-d' }}</span>
+                        <h3><a href="{% url 'conversation_detail' conversation.pk %}">{{ conversation.display_title }}</a></h3>
+                        <p>{{ conversation.display_diary|truncatechars:180 }}</p>
+                    </div>
+                    <div class="session-meta">
+                        <strong>완성</strong>
+                        <span>{{ conversation.updated_at|date:'m-d H:i' }}</span>
+                        <div class="row-actions">
+                            <a href="{% url 'conversation_detail' conversation.pk %}">열기</a>
+                            <form class="delete-form" method="post" action="{% url 'conversation_delete' conversation.pk %}" data-title="{{ conversation.display_title }}">
+                                {% csrf_token %}
+                                <button class="danger-link" type="submit">삭제</button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>작성된 일기가 없습니다.</h3>
+            <p>오늘 하루와 몇 번 대화한 뒤 일기 생성 버튼을 누르면 이곳에서 확인할 수 있습니다.</p>
+        </div>
+    {% endif %}
+    </div>
+</section>
+
+<div id="calendarArea">
+<section class="panel calendar-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Diary Calendar</p>
+            <h2>{{ calendar_month_label }} 일기 캘린더</h2>
+        </div>
+        <div class="calendar-header-actions">
+            <nav class="calendar-nav" aria-label="캘린더 월 이동">
+                <a href="{{ calendar_prev_url }}">이전달</a>
+                <a href="{{ calendar_today_url }}">오늘</a>
+                <a href="{{ calendar_next_url }}">다음달</a>
+            </nav>
+            <div class="calendar-summary" data-calendar-total>
+                <strong>{{ calendar_written_days }}</strong>
+                <span>개 작성</span>
+            </div>
+        </div>
+    </div>
+    <div class="calendar-grid" aria-label="{{ calendar_month_label }} 작성 현황">
+        <div class="calendar-weekdays">
+            <span>일</span>
+            <span>월</span>
+            <span>화</span>
+            <span>수</span>
+            <span>목</span>
+            <span>금</span>
+            <span>토</span>
+        </div>
+        {% for week in calendar_weeks %}
+            <div class="calendar-week">
+                {% for day in week %}
+                    {% if day.day %}
+                        <a class="calendar-day{% if day.has_diary %} written{% endif %}{% if day.is_today %} today{% endif %}{% if day.is_selected %} selected{% endif %}" href="?date={{ day.date_param }}#selectedDateDiaries" data-date="{{ day.date_param }}" data-count="{{ day.count }}">
+                            <strong>{{ day.day }}</strong>
+                            {% if day.count %}<span>일기 {{ day.count }}개</span>{% endif %}
+                        </a>
+                    {% else %}
+                        <div class="calendar-day blank"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% if selected_date %}
+<section class="panel selected-date-panel" id="selectedDateDiaries">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Selected Date</p>
+            <h2>{{ selected_date|date:'Y년 m월 d일' }} 작성된 일기</h2>
+        </div>
+        <a class="button" href="{% url 'conversation_new' %}?date={{ selected_date|date:'Y-m-d' }}">이 날짜 일기 작성</a>
+    </div>
+    {% if selected_diaries %}
+        <div class="diary-list">
+            {% for conversation in selected_diaries %}
+                <article class="diary-preview" data-conversation-id="{{ conversation.pk }}">
+                    <h3><a href="{% url 'conversation_detail' conversation.pk %}">{{ conversation.display_title }}</a></h3>
+                    <p>{{ conversation.display_diary|truncatechars:180 }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>이 날짜에 작성된 일기가 없습니다.</h3>
+            <p>이 날짜로 새 대화를 시작해서 일기를 작성할 수 있습니다.</p>
+        </div>
+    {% endif %}
+</section>
+{% endif %}
+</div>
+
+<section class="content-grid">
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Chats</p>
+                <h2>하루 대화 목록</h2>
+            </div>
+        </div>
+
+        {% if conversations %}
+            <div class="session-list" id="sessionList">
+                {% for conversation in conversations %}
+                    <article class="session-item" data-conversation-id="{{ conversation.pk }}" data-diary-status="{% if conversation.is_finished %}finished{% else %}writing{% endif %}" data-diary-date="{{ conversation.diary_date|date:'Y-m-d' }}" data-session-text="{{ conversation.display_title }} {{ conversation.mood }} {{ conversation.display_diary }}">
+                        <div>
+                            <span class="pill">{{ conversation.diary_date|date:'Y-m-d' }}</span>
+                            <h3><a href="{% url 'conversation_detail' conversation.pk %}">{{ conversation.display_title }}</a></h3>
+                            <p>
+                                {% if conversation.mood %}오늘의 기분: {{ conversation.mood }} · {% endif %}
+                                {{ conversation.message_count }}개 메시지
+                            </p>
+                        </div>
+                        <div class="session-meta">
+                            <strong>{% if conversation.is_finished %}완성{% else %}대화중{% endif %}</strong>
+                            <span>{{ conversation.updated_at|date:'m-d H:i' }}</span>
+                            <div class="row-actions">
+                                <a href="{% url 'conversation_detail' conversation.pk %}">열기</a>
+                                <form class="delete-form" method="post" action="{% url 'conversation_delete' conversation.pk %}" data-title="{{ conversation.display_title }}">
+                                    {% csrf_token %}
+                                    <button class="danger-link" type="submit">삭제</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h3>아직 대화가 없습니다.</h3>
+                <p>오늘 하루에게 첫 장면을 말하면서 일기 재료를 모아보세요.</p>
+                <a class="button" href="{% url 'conversation_new' %}">새 대화 시작</a>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Diaries</p>
+                <h2>최근 완성된 일기</h2>
+            </div>
+            <input class="search-input" id="sessionSearch" type="search" placeholder="일기 검색">
+        </div>
+
+        {% if recent_diaries %}
+            <div class="diary-list">
+                {% for conversation in recent_diaries %}
+                    <article class="diary-preview" data-conversation-id="{{ conversation.pk }}">
+                        <h3><a href="{% url 'conversation_detail' conversation.pk %}">{{ conversation.display_title }}</a></h3>
+                        <p>{{ conversation.display_diary|truncatechars:180 }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h3>완성된 일기가 없습니다.</h3>
+                <p>오늘 하루와 몇 번 대화한 뒤 일기 생성 버튼을 누르면 여기에 결과가 표시됩니다.</p>
+            </div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}
