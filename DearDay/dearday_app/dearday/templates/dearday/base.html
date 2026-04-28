@@ -1,0 +1,35 @@
+{% load static %}
+{% now "d" as today_day %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}오늘 하루{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'dearday/styles.css' %}?v=202604272114">
+    <script src="{% static 'dearday/scripts.js' %}?v=202604272114" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{% url 'dashboard' %}">
+            <span class="brand-mark">{{ today_day }}</span>
+            <span>
+                <strong>오늘 하루</strong>
+                <small>친구처럼 대화하는 AI 일기</small>
+            </span>
+        </a>
+    </header>
+
+    <main class="page-shell">
+        {% if messages %}
+            <section class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
