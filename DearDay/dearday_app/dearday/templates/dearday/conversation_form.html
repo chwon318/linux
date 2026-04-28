@@ -1,0 +1,22 @@
+{% extends 'dearday/base.html' %}
+
+{% block title %}오늘 하루 쓰기{% endblock %}
+
+{% block content %}
+<section class="form-layout">
+    <div class="form-copy">
+        <p class="eyebrow">New Chat</p>
+        <h1>오늘 하루와 대화를 시작합니다.</h1>
+        <p>날짜와 지금의 기분만 적으면 친구처럼 말을 건네며 하루를 더 잘 떠올릴 수 있도록 질문을 이어갑니다. 일기 제목은 완성된 내용에 맞춰 AI가 정합니다.</p>
+    </div>
+
+    <form class="form-card" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="button" type="submit">대화 시작</button>
+            <a class="button secondary" href="{% url 'dashboard' %}">취소</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
